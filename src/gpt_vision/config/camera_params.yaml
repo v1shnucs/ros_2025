@@ -1,0 +1,43 @@
+# RealSense Camera Configuration for Grid Detection
+
+# Camera Resolution and FPS
+color_width: 1920
+color_height: 1080
+color_fps: 30
+
+# Image Processing Parameters
+target_resolution:
+  width: 230
+  height: 440
+
+# ROI for Grid Detection (in pixels, from full resolution)
+roi:
+  x_offset: 100  # Left offset
+  y_offset: 150  # Top offset
+  width: 440     # ROI width
+  height: 230    # ROI height
+
+# Image Quality Parameters
+quality_check:
+  min_brightness: 30    # Minimum average brightness
+  max_brightness: 225   # Maximum average brightness
+  min_contrast: 30     # Minimum contrast value
+  blur_threshold: 100   # Minimum variance for blur detection
+
+# Model Parameters
+model:
+  confidence_threshold: 0.5  # Minimum confidence for object detection
+  input_scaling: 255.0      # Pixel value normalization factor
+
+# Grid Layout
+grid:
+  squares: 12              # Total number of squares
+  rows: 3                 # Number of rows
+  columns: 4              # Number of columns
+  square_size: 60        # Expected square size in pixels after resizing
+
+# Debug Settings
+debug:
+  save_processed_images: false
+  display_detections: false
+  log_level: info

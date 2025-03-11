@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+    <!-- Arguments -->
+    <arg name="test_vision" default="true"/>
+    <arg name="test_speech" default="true"/>
+    <arg name="test_robot" default="true"/>
+    <arg name="safety_mode" default="true"/>
+
+    <!-- Enable Robot (required for tests) -->
+    <node if="$(arg test_robot)" 
+          name="robot_enable" 
+          pkg="intera_interface" 
+          type="enable_robot.py" 
+          output="screen"
+          args="-e"/>
+
+    <!-- Joint Trajectory Action Server -->
+    <node if="$(arg test_robot)"
+          name="joint_trajectory_action_server"
+          pkg="intera_interface"
+          type="joint_trajectory_action_server.py"
+          output="screen"/>
+
+    <!-- Vision System (if testing vision) -->
+    <group if="$(arg test_vision)">
+        <node name="vision_processing" 
+              pkg="gpt_vision" 
+              type="vision_processing.py" 
+              output="screen">
+            <rosparam command="load" 
+                      file="$(find gpt_vision)/config/camera_params.yaml"/>
+        </node>
+        
+        <node name="grid_state_publisher" 
+              pkg="gpt_vision" 
+              type="grid_state_publisher.py" 
+              output="screen"/>
+
+        <!-- RealSense Camera -->
+        <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+            <arg name="color_width" value="1920"/>
+            <arg name="color_height" value="1080"/>
+            <arg name="color_fps" value="30"/>
+            <arg name="enable_depth" value="false"/>
+        </include>
+    </group>
+
+    <!-- Speech System (if testing speech) -->
+    <group if="$(arg test_speech)">
+        <node name="speech_bridge" 
+              pkg="audio" 
+              type="speech_bridge.py" 
+              output="screen">
+            <param name="credentials_path" 
+                   value="$(find audio)/credentials/surf-test-426821-4c653702a368.json"/>
+        </node>
+        <node name="speak_gpt" 
+              pkg="audio" 
+              type="speak_gpt.py" 
+              output="screen"/>
+    </group>
+
+    <!-- Safety Parameters -->
+    <group if="$(arg safety_mode)">
+        <param name="/robot/speed_ratio" value="0.3"/>  <!-- Reduced speed for testing -->
+        <param name="/robot/accel_ratio" value="0.3"/>  <!-- Reduced acceleration for testing -->
+    </group>
+    <group unless="$(arg safety_mode)">
+        <param name="/robot/speed_ratio" value="0.5"/>  <!-- Normal speed -->
+        <param name="/robot/accel_ratio" value="0.5"/>  <!-- Normal acceleration -->
+    </group>
+
+    <!-- Test Sequence Node -->
+    <node name="test_sequence" 
+          pkg="robot_action" 
+          type="test_sequence.py" 
+          output="screen"/>
+
+    <!-- Error Monitor -->
+    <node name="error_monitor" 
+          pkg="robot_action" 
+          type="error_monitor.py" 
+          output="screen"/>
+
+    <!-- RQT Graph for visualization (optional) -->
+    <!-- <node name="rqt_graph" pkg="rqt_graph" type="rqt_graph"/> -->
+
+</launch>

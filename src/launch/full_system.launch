@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+    <!-- Vision System -->
+    <node name="vision_processing" pkg="gpt_vision" type="vision_processing.py" output="screen">
+        <rosparam command="load" file="$(find gpt_vision)/config/camera_params.yaml" />
+    </node>
+    
+    <node name="grid_state_publisher" pkg="gpt_vision" type="grid_state_publisher.py" output="screen" />
+    
+    <!-- Speech System -->
+    <node name="speech_bridge" pkg="audio" type="speech_bridge.py" output="screen">
+        <param name="credentials_path" value="$(find audio)/credentials/surf-test-426821-4c653702a368.json" />
+    </node>
+    <node name="speak_gpt" pkg="audio" type="speak_gpt.py" output="screen" />
+    
+    <!-- GPT Interface -->
+    <node name="gpt_response" pkg="gpt_vision" type="get_gpt_response.py" output="screen" />
+    
+    <!-- Robot Control -->
+    <node name="action_executor" pkg="robot_action" type="act_gpt.py" output="screen" />
+    
+    <!-- RealSense Camera -->
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+        <arg name="color_width" value="1920"/>
+        <arg name="color_height" value="1080"/>
+        <arg name="color_fps" value="30"/>
+        <arg name="enable_depth" value="false"/>
+    </include>
+
+    <!-- Add required ROS parameters -->
+    <param name="/use_sim_time" value="false"/>
+    <param name="/robot/speed_ratio" value="0.5"/>
+    <param name="/robot/accel_ratio" value="0.5"/>
+</launch>

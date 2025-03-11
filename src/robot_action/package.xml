@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>robot_action</name>
+  <version>1.0.0</version>
+  <description>
+    ROS package for Sawyer robot control with vision and speech integration
+  </description>
+
+  <maintainer email="vishnureshamwala@gmail.com">v1shnucs</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>rospy</depend>
+  <depend>std_msgs</depend>
+  <depend>intera_interface</depend>
+  <depend>intera_motion_interface</depend>
+  <depend>intera_core_msgs</depend>
+  <depend>sensor_msgs</depend>
+
+  <exec_depend>python-numpy</exec_depend>
+  <exec_depend>python-tensorflow</exec_depend>
+  <exec_depend>python-opencv</exec_depend>
+  <exec_depend>python-sounddevice</exec_depend>
+  <exec_depend>realsense2_camera</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+
+  <export>
+  </export>
+</package>

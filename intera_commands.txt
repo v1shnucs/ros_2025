@@ -1,0 +1,105 @@
+# Intera Robot System Commands Reference
+
+## Initial Setup and Testing
+# Initialize the complete system
+./initialize.sh                        # Set up everything and check dependencies
+
+# Testing Commands
+./quick_test.sh                        # Run basic hardware tests
+./test.sh                             # Run full system tests
+./test.sh --vision-only               # Test only vision system
+./test.sh --speech-only               # Test only speech system
+./test.sh --robot-only                # Test only robot movement
+
+## Core Robot Commands
+# Robot Control
+rosrun intera_interface enable_robot.py -e     # Enable robot
+rosrun intera_interface enable_robot.py -d     # Disable robot
+rosrun intera_interface enable_robot.py -s     # Check robot status
+rosrun intera_interface joint_trajectory_action_server.py  # Start trajectory server
+
+# Emergency Commands
+./cleanup.sh                          # Emergency cleanup
+rosservice call /robot/set_super_stop true    # Emergency stop
+
+## Movement Commands
+# Basic Movement
+rosrun robot_action goto_table_neutral.py     # Move to neutral position
+rosrun robot_action open_gripper.py           # Open gripper
+rosrun robot_action close_gripper.py          # Close gripper
+
+## Vision System
+# Camera Control
+roslaunch realsense2_camera rs_camera.launch  # Start RealSense camera
+rostopic echo /camera/color/image_raw         # Monitor camera feed
+
+# Vision Processing
+rostopic echo /vision/grid_state              # Monitor grid state
+rostopic echo /vision/request_state           # Request state update
+
+## Speech System
+# Speech Recognition
+rostopic echo /audio/speech_text_ros          # Monitor speech recognition
+rostopic echo /audio/status_ros               # Monitor speech status
+
+# Speech Output
+rostopic echo /speak_finished                 # Monitor speech output completion
+
+## System Monitoring
+# Status Monitoring
+rostopic echo /robot/state                    # Monitor robot state
+rostopic echo /robot/joint_states             # Monitor joint states
+rostopic echo /system/error_status            # Monitor error status
+
+# Debug Commands
+roswtf                                       # Check ROS system for problems
+rostopic hz /vision/grid_state               # Check vision update rate
+rostopic hz /audio/speech_text_ros           # Check speech recognition rate
+rosnode cleanup                              # Clean up dead nodes
+
+## System Management
+# Start/Stop
+roslaunch robot_action full_system.launch    # Launch full system
+roslaunch robot_action test_system.launch    # Launch test system
+
+# Cleanup
+./cleanup.sh                                # Clean system state
+killall -9 rosmaster                       # Force kill ROS (emergency only)
+
+## Common Issues and Solutions:
+1. Robot Not Responding:
+   - Check if robot is enabled:
+     rosrun intera_interface enable_robot.py -s
+   - Verify trajectory server is running:
+     rosrun intera_interface joint_trajectory_action_server.py
+   - Check network connection:
+     ping sawyer.local
+
+2. Vision System Issues:
+   - Check camera connection:
+     rostopic hz /camera/color/image_raw
+   - Verify lighting conditions
+   - Restart camera:
+     roslaunch realsense2_camera rs_camera.launch
+
+3. Speech Recognition Issues:
+   - Check microphone:
+     arecord -l
+   - Verify Google Cloud credentials
+   - Check network connection:
+     ping 8.8.8.8
+
+4. Emergency Recovery:
+   - Run cleanup script:
+     ./cleanup.sh
+   - Re-initialize system:
+     ./initialize.sh
+   - If problems persist:
+     1. Power cycle robot
+     2. Restart ROS: killall -9 rosmaster
+     3. Re-run initialization
+
+5. Performance Issues:
+   - Check CPU usage: htop
+   - Monitor ROS node performance: rqt_graph
+   - Check network latency: rostopic hz
