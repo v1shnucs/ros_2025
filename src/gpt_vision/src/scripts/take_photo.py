@@ -42,7 +42,14 @@ def callback(data, args):
 
         # Save image
         save_path = os.path.join(save_dir, '{}.jpg'.format(filename))
-        cv2.imwrite(save_path, image_array)
+        
+        # Crop the image
+        crop_x = 100
+        crop_y = 125
+        y_offset = 15
+        cropped_image = image_array[crop_y+y_offset:height-crop_y+y_offset, crop_x:width-crop_x]
+        
+        cv2.imwrite(save_path, cropped_image)
         rospy.loginfo("Saved image to {0}.jpg".format(filename))
         rospy.signal_shutdown('Photo taken successfully.')
 
