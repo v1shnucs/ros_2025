@@ -1,5 +1,4 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
 
 import rospy
 from sensor_msgs.msg import Image
@@ -9,9 +8,8 @@ import intera_interface
 import argparse
 import os
 
-# Camera topics
 HEAD_CAMERA_TOPIC = "/io/internal_camera/head_camera/image_rect_color"
-ARM_CAMERA_TOPIC = "/io/internal_camera/right_hand_camera/image_raw"  # not functional, needs conversion from mono8 encoding
+ARM_CAMERA_TOPIC = "/io/internal_camera/right_hand_camera/image_raw"
 REALSENSE_CAMERA_TOPIC = "/camera/color/image_raw"
 
 def callback(data, args):
@@ -19,88 +17,62 @@ def callback(data, args):
         width = data.width
         height = data.height
         encoding = data.encoding
-        (filename, camera, save_dir) = args
+        (filename, camera) = args
 
         image_data = np.frombuffer(data.data, dtype=np.uint8)
+        print("Image data: {} {} {}".format(width, height, encoding))
 
-        rospy.loginfo("Image Data: {} x {} pixels, encoding: {}".format(width, height, encoding))
-
-        if encoding == "bgr8":
+        if encoding == "rgb8":
             image_array = image_data.reshape((height, width, 3))
-        elif encoding == "rgb8":
-            # Convert RGB to BGR for cv2.imwrite which expects BGR
-            image_array = image_data.reshape((height, width, 3))
+            # Convert RGB to BGR for cv2.imwrite
             image_array = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
+        elif encoding == "bgr8":
+            image_array = image_data.reshape((height, width, 3))
         elif encoding == "bgra8":
             image_array = image_data.reshape((height, width, 4))[:,:,[2,1,0,3]]
             image_array = image_array[:,:,:3]
         else:
-            rospy.logerr("Encoding not recognized: {}".format(encoding))
+            print("Encoding not recognized")
             return
 
         # Ensure save directory exists
+        save_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'images')
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
         # Save image
         save_path = os.path.join(save_dir, '{}.jpg'.format(filename))
         cv2.imwrite(save_path, image_array)
-        rospy.loginfo("Image saved to: {}".format(save_path))
+        rospy.loginfo("Saved image to {0}.jpg".format(filename))
+        rospy.signal_shutdown('Photo taken successfully.')
 
-        rospy.signal_shutdown('Image captured successfully.')
-        
     except Exception as e:
-        rospy.logerr("Error in callback: {0}".format(e))
-        rospy.signal_shutdown('Error in image capture.')
+        rospy.logerr("Error: {0}".format(e))
 
-def take_photo(filename, camera, save_dir):
-    """
-    Take a photo using the specified camera.
-    
-    Args:
-        filename (str): Name for the saved image file (without extension)
-        camera (str): Either 'head_camera' or 'rs' for RealSense camera
-        save_dir (str): Directory to save the image
-    """
+def take_photo(filename, camera):
     rospy.init_node('take_photo', anonymous=True)
 
+    rospy.loginfo("Using camera: {}".format(camera))
+
     if camera == 'head_camera':
-        # Initialize and start head camera streaming
         cameras = intera_interface.Cameras()
         cameras.start_streaming(camera)
-        camera_topic = HEAD_CAMERA_TOPIC
+        path = HEAD_CAMERA_TOPIC
     else:
-        # Use RealSense camera
-        camera_topic = REALSENSE_CAMERA_TOPIC
+        path = REALSENSE_CAMERA_TOPIC
 
-    rospy.loginfo("Subscribing to camera topic: {}".format(camera_topic))
-    rospy.Subscriber(camera_topic, Image, callback, callback_args=(filename, camera, save_dir))
-
-    try:
-        rospy.spin()
-    except KeyboardInterrupt:
-        rospy.signal_shutdown('Program terminated by user.')
+    rospy.loginfo("Subscribing to {}".format(path))
+    rospy.Subscriber(path, Image, callback, callback_args=(filename, camera))
+    rospy.spin()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description='Takes photo using Sawyer\'s cameras.',
-        formatter_class=argparse.RawTextHelpFormatter
+        description='Takes photo using Sawyer head camera or RealSense camera'
     )
-
-    parser.add_argument('filename', 
-                        help='Name of image file to be saved (without extension)')
-    
-    parser.add_argument('-c', '--camera', 
-                        choices=['head_camera', 'rs'],
-                        default='head_camera',
-                        help='Camera to use:\n'
-                             'head_camera: Sawyer\'s head camera\n'
-                             'rs: RealSense camera')
-    
-    parser.add_argument('-d', '--dir',
-                        default=os.path.join(os.path.dirname(__file__), '../images'),
-                        help='Directory to save images (default: ../images)')
-
+    parser.add_argument('filename', help='Name of jpg file to be saved')
+    parser.add_argument('-c', '--camera', help='"head_camera" or "rs" for RealSense camera, default is rs')
     args = parser.parse_args()
+    if args.camera is None:
+        args.camera = 'rs'  # Default to RealSense camera
 
-    take_photo(args.filename, args.camera, args.dir)
+    take_photo(args.filename, args.camera)
